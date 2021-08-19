@@ -1,0 +1,16 @@
+syntax="proto3";
+
+import "google/protobuf/empty.proto";
+
+option go_package = "/pb";
+
+service PriceService {
+  rpc GetPrices (google.protobuf.Empty) returns (stream Price) {}
+}
+
+message Price {
+  string id = 1;
+  double ask = 2;
+  double bid = 3;
+  string symbol = 4;
+}

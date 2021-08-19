@@ -1,20 +1,5 @@
 services:
   price-service:
     build: .
-    depends_on:
-      - redis
     environment:
-      - REDIS_HOST=redis
       - ENVIRONMENT=prod
-
-  redis:
-    image: "redis:6-alpine"
-    hostname: redis
-    ports:
-      - "6379:6379"
-    command: sh -c "redis-server --appendonly yes"
-    volumes:
-      - redis-data:/data
-
-volumes:
-  redis-data:

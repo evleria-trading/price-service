@@ -2,8 +2,10 @@ package generator
 
 import (
 	"context"
+	"github.com/evleria/price-service/internal/chanPool"
 	"github.com/evleria/price-service/internal/model"
-	"github.com/evleria/price-service/internal/producer"
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"math"
 	"math/rand"
 	"time"
@@ -14,14 +16,14 @@ type Price interface {
 }
 
 type price struct {
-	pricesProducer producer.Price
-	rate           time.Duration
+	pool chanPool.ChanPool
+	rate time.Duration
 }
 
-func NewPricesGenerator(pricesProducer producer.Price, rate time.Duration) Price {
+func NewPricesGenerator(pool chanPool.ChanPool, rate time.Duration) Price {
 	return &price{
-		pricesProducer: pricesProducer,
-		rate:           rate,
+		pool: pool,
+		rate: rate,
 	}
 }
 
@@ -37,6 +39,7 @@ var symbols = []string{
 
 func (g *price) GeneratePrices(ctx context.Context) error {
 	m := map[string]model.Price{}
+	log.Info("Starting prices generation at rate: ", g.rate)
 	for {
 		select {
 		case <-time.After(g.rate):
@@ -51,10 +54,7 @@ func (g *price) GeneratePrices(ctx context.Context) error {
 			}
 			m[s] = p
 
-			err := g.pricesProducer.Produce(ctx, p)
-			if err != nil {
-				return err
-			}
+			g.pool.WriteToEach(p)
 		case <-ctx.Done():
 			return nil
 		}
@@ -63,6 +63,7 @@ func (g *price) GeneratePrices(ctx context.Context) error {
 
 func newPrice(symbol string, ask, bid float64) model.Price {
 	return model.Price{
+		Id:     uuid.New().String(),
 		Symbol: symbol,
 		Ask:    roundToCents(ask),
 		Bid:    roundToCents(bid),

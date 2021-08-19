@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/caarlos0/env/v6"
+	"github.com/evleria/price-service/internal/chanPool"
 	"github.com/evleria/price-service/internal/config"
 	"github.com/evleria/price-service/internal/generator"
-	"github.com/evleria/price-service/internal/producer"
-	"github.com/go-redis/redis/v8"
+	"github.com/evleria/price-service/internal/handler"
+	"github.com/evleria/price-service/protocol/pb"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"net"
 )
 
 func main() {
@@ -17,14 +20,26 @@ func main() {
 
 	setupLogger(cfg.Environment)
 
-	redisClient := getRedis(cfg)
-	defer redisClient.Close()
+	pool := chanPool.NewChanPool()
+	priceGenerator := generator.NewPricesGenerator(pool, cfg.GenerationRate)
 
-	pricesProducer := producer.NewPriceProducer(redisClient)
-	priceGenerator := generator.NewPricesGenerator(pricesProducer, cfg.GenerationRate)
+	go func() {
+		check(priceGenerator.GeneratePrices(context.Background()))
+	}()
 
-	log.Info("Starting prices generation at rate: ", cfg.GenerationRate)
-	check(priceGenerator.GeneratePrices(context.Background()))
+	startGrpcServer(handler.NewPriceService(pool), ":6000")
+}
+
+func startGrpcServer(service pb.PriceServiceServer, port string) {
+	listener, err := net.Listen("tcp", port)
+	check(err)
+
+	s := grpc.NewServer()
+	pb.RegisterPriceServiceServer(s, service)
+	reflection.Register(s)
+
+	log.Info("gRPC server started on ", port)
+	check(s.Serve(listener))
 }
 
 func setupLogger(environment string) {
@@ -35,19 +50,6 @@ func setupLogger(environment string) {
 	default:
 		log.SetLevel(log.DebugLevel)
 	}
-}
-
-func getRedis(cfg *config.Config) *redis.Client {
-	opts := &redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.RedisHost, cfg.RedisPort),
-		Password: cfg.RedisPass,
-	}
-
-	redisClient := redis.NewClient(opts)
-	_, err := redisClient.Ping(context.Background()).Result()
-	check(err)
-
-	return redisClient
 }
 
 func check(err error) {
