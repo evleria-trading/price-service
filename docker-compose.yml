@@ -1,5 +1,8 @@
 services:
   price-service:
     build: .
+    ports:
+      - "6003:6000"
     environment:
       - ENVIRONMENT=prod
+      - GENERATION_RATE=1ms

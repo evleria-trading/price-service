@@ -54,6 +54,7 @@ func (g *price) GeneratePrices(ctx context.Context) error {
 			}
 			m[s] = p
 
+			log.WithFields(log.Fields{"symbol": p.Symbol, "ask": p.Ask, "bid": p.Bid}).Info("Generated price")
 			g.pool.WriteToEach(p)
 		case <-ctx.Done():
 			return nil
@@ -75,5 +76,5 @@ func roundToCents(f float64) float64 {
 }
 
 func getRandomCoefficient() float64 {
-	return rand.Float64()*0.2 + 0.9
+	return rand.Float64()*0.0201010101 + 0.99
 }

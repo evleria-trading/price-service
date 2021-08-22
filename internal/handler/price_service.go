@@ -18,8 +18,8 @@ func NewPriceService(pool chanPool.ChanPool) pb.PriceServiceServer {
 }
 
 func (p *PriceService) GetPrices(_ *empty.Empty, stream pb.PriceService_GetPricesServer) error {
-	ch := p.pool.Acquire()
-	defer p.pool.Release(ch)
+	ch, id := p.pool.Acquire()
+	defer p.pool.Release(id)
 
 	for {
 		select {

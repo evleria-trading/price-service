@@ -8,17 +8,20 @@ import (
 
 type ChanPool interface {
 	WriteToEach(p model.Price)
-	Acquire() chan model.Price
-	Release(ch chan model.Price)
+	Acquire() (ch chan model.Price, id int)
+	Release(id int)
 }
 
 type chanPool struct {
-	mx    sync.Mutex
-	chans []chan model.Price
+	lastId int
+	mx     sync.Mutex
+	chans  map[int]chan model.Price
 }
 
 func NewChanPool() ChanPool {
-	return &chanPool{}
+	return &chanPool{
+		chans: map[int]chan model.Price{},
+	}
 }
 
 func (c *chanPool) WriteToEach(p model.Price) {
@@ -30,29 +33,28 @@ func (c *chanPool) WriteToEach(p model.Price) {
 	}
 }
 
-func (c *chanPool) Acquire() chan model.Price {
+func (c *chanPool) Acquire() (ch chan model.Price, id int) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
 	log.Debug("Acquire")
 
-	ch := make(chan model.Price)
-	c.chans = append(c.chans, ch)
-	return ch
+	ch = make(chan model.Price)
+	c.lastId++
+	id = c.lastId
+
+	c.chans[id] = ch
+	return ch, id
 }
 
-func (c *chanPool) Release(ch chan model.Price) {
+func (c *chanPool) Release(id int) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
 	log.Debug("Release")
 
-	close(ch)
-	for i, x := range c.chans {
-		if x == ch {
-			c.chans[i], c.chans[len(c.chans)-1] = c.chans[len(c.chans)-1], c.chans[i]
-			c.chans = c.chans[:len(c.chans)-1]
-			break
-		}
+	if ch, ok := c.chans[id]; ok {
+		delete(c.chans, id)
+		close(ch)
 	}
 }
