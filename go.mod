@@ -1,4 +1,4 @@
-module github.com/evleria/price-service
+module github.com/evleria-trading/price-service
 
 go 1.16
 

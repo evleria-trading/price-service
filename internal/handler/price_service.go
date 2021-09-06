@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/evleria/price-service/internal/chanPool"
-	"github.com/evleria/price-service/protocol/pb"
+	"github.com/evleria-trading/price-service/internal/chanPool"
+	"github.com/evleria-trading/price-service/protocol/pb"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 

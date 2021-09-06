@@ -5,4 +5,4 @@ services:
       - "6003:6000"
     environment:
       - ENVIRONMENT=prod
-      - GENERATION_RATE=1ms
+      - GENERATION_RATE=100ms

@@ -1,7 +1,7 @@
 package chanPool
 
 import (
-	"github.com/evleria/price-service/internal/model"
+	"github.com/evleria-trading/price-service/internal/model"
 	log "github.com/sirupsen/logrus"
 	"sync"
 )

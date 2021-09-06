@@ -2,8 +2,8 @@ package generator
 
 import (
 	"context"
-	"github.com/evleria/price-service/internal/chanPool"
-	"github.com/evleria/price-service/internal/model"
+	"github.com/evleria-trading/price-service/internal/chanPool"
+	"github.com/evleria-trading/price-service/internal/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"math"
