@@ -37,11 +37,13 @@ func (c *chanPool) Acquire() (ch chan model.Price, id int) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
-	log.Debug("Acquire")
-
 	ch = make(chan model.Price)
 	c.lastId++
 	id = c.lastId
+
+	log.WithFields(log.Fields{
+		"chan_id": id,
+	}).Debug("Channel acquired")
 
 	c.chans[id] = ch
 	return ch, id
@@ -51,10 +53,13 @@ func (c *chanPool) Release(id int) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
-	log.Debug("Release")
-
 	if ch, ok := c.chans[id]; ok {
 		delete(c.chans, id)
 		close(ch)
+
+		log.WithFields(log.Fields{
+			"chan_id":    id,
+			"chans_left": len(c.chans),
+		}).Debug("Channel released")
 	}
 }
